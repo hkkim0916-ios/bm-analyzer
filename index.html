@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BM Analyzer</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Business Model Analyzer</p>
+          <h1>사업아이템 정교화</h1>
+        </div>
+        <button class="icon-button" id="newItemButton" type="button" title="새 아이템">+</button>
+      </header>
+
+      <section class="workspace">
+        <aside class="sidebar" aria-label="사업아이템 목록">
+          <div class="sidebar-head">
+            <h2>아이템</h2>
+            <span id="itemCount">0</span>
+          </div>
+          <div id="itemList" class="item-list"></div>
+        </aside>
+
+        <section class="editor">
+          <nav class="tabs" aria-label="화면 전환">
+            <button class="tab active" type="button" data-tab="input">입력</button>
+            <button class="tab" type="button" data-tab="refine">정교화</button>
+            <button class="tab" type="button" data-tab="analysis">분석</button>
+            <button class="tab" type="button" data-tab="compare">비교</button>
+          </nav>
+
+          <section class="panel active" id="inputPanel">
+            <div class="flow-note">
+              <strong>권장 순서</strong>
+              <span>기본 입력을 작성한 뒤 정교화 버튼을 눌러 부족한 항목을 보완하고, 그 다음 최종 분석을 실행합니다.</span>
+            </div>
+            <form id="ideaForm" class="form-grid">
+              <label>
+                <span>사업아이템 이름</span>
+                <input id="name" name="name" autocomplete="off" placeholder="예: 모바일 현장 점검 대시보드" />
+              </label>
+              <label>
+                <span>분야</span>
+                <select id="category" name="category">
+                  <option>AI/소프트웨어</option>
+                  <option>커머스</option>
+                  <option>교육</option>
+                  <option>헬스케어</option>
+                  <option>콘텐츠</option>
+                  <option>제조/유통</option>
+                  <option>로컬 서비스</option>
+                  <option>기타</option>
+                </select>
+              </label>
+              <label>
+                <span>타겟고객</span>
+                <textarea id="target" name="target" placeholder="누가 이 서비스를 가장 절실히 필요로 하나요?"></textarea>
+              </label>
+              <label>
+                <span>해결하려는 문제점</span>
+                <textarea id="problem" name="problem" placeholder="현재 고객이 겪는 불편, 비용, 시간 낭비를 적어주세요."></textarea>
+              </label>
+              <label>
+                <span>솔루션</span>
+                <textarea id="solution" name="solution" placeholder="어떤 방식으로 문제를 해결하나요?"></textarea>
+              </label>
+              <label>
+                <span>수익구조</span>
+                <textarea id="revenue" name="revenue" placeholder="구독, 판매, 중개수수료, 광고, 유지보수 등"></textarea>
+              </label>
+              <label>
+                <span>비용구조</span>
+                <textarea id="cost" name="cost" placeholder="개발, 마케팅, 인건비, 서버, 운영, 원가 등"></textarea>
+              </label>
+              <label>
+                <span>차별화요소</span>
+                <textarea id="differentiation" name="differentiation" placeholder="기존 대안과 비교해 왜 선택받을 수 있나요?"></textarea>
+              </label>
+            </form>
+          </section>
+
+          <section class="panel" id="refinePanel">
+            <div class="section-head">
+              <div>
+                <h2>보완 필요 항목</h2>
+                <p>입력 내용만으로 판단하기 어려운 부분을 먼저 정리합니다.</p>
+              </div>
+              <button id="refreshQuestionsButton" type="button" class="secondary-button">질문 갱신</button>
+            </div>
+            <div id="gapList" class="gap-list"></div>
+            <div class="refine-divider">
+              <h3>추가 질문 답변</h3>
+              <p>답변은 최종 분석의 점수, 리스크, 보완 제언에 반영됩니다.</p>
+            </div>
+            <div id="questionList" class="question-list"></div>
+          </section>
+
+          <section class="panel" id="analysisPanel">
+            <div class="section-head">
+              <div>
+                <h2>분석 리포트</h2>
+                <p id="analysisStatus">정교화 후 분석을 실행하세요.</p>
+              </div>
+              <button id="copyReportButton" type="button" class="secondary-button">복사</button>
+            </div>
+            <div id="report" class="report empty-state">아직 분석 결과가 없습니다.</div>
+          </section>
+
+          <section class="panel" id="comparePanel">
+            <div class="section-head">
+              <div>
+                <h2>아이템 비교</h2>
+                <p>저장된 사업아이템을 점수 기준으로 비교합니다.</p>
+              </div>
+              <button id="exportButton" type="button" class="secondary-button">내보내기</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>아이템</th>
+                    <th>추진</th>
+                    <th>난이도</th>
+                    <th>리스크</th>
+                    <th>수익성</th>
+                    <th>판단</th>
+                  </tr>
+                </thead>
+                <tbody id="compareTable"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </section>
+
+      <footer class="actionbar">
+        <button id="saveButton" type="button" class="secondary-button">저장</button>
+        <button id="askButton" type="button" class="secondary-button">정교화</button>
+        <button id="analyzeButton" type="button" class="primary-button">최종 분석</button>
+      </footer>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
