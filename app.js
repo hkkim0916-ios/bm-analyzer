@@ -65,6 +65,46 @@ const MODEL_BENCHMARKS = [
     trend: "AI 에이전트, 업무 자동화, 개인화 분석 흐름과 부합하나 실제 업무 절감 효과 검증이 필수",
     fitBoost: 0.8,
   },
+  {
+    id: "distribution-wholesale",
+    name: "유통/도소매",
+    keywords: ["유통", "도매", "소매", "납품", "입점", "물류", "재고", "마진", "공급", "총판", "대리점", "B2B 납품"],
+    strengths: ["상품 소싱과 판매처가 명확하면 매출 발생 구조가 빠르게 보일 수 있음", "반복 납품처를 확보하면 안정 매출로 전환 가능"],
+    risks: ["재고 부담, 물류비, 반품, 미수금, 낮은 마진율이 핵심 리스크", "공급처 의존도가 높으면 가격 경쟁에 취약함"],
+    revenueHints: ["도매 마진", "납품 단가 차익", "물류/취급 수수료", "정기 납품 계약"],
+    trend: "니치 상품 소싱, B2B 정기 납품, 로컬 유통 효율화 수요와 맞물릴 수 있음",
+    fitBoost: 0.5,
+  },
+  {
+    id: "professional-service",
+    name: "전문 용역/컨설팅",
+    keywords: ["용역", "컨설팅", "대행", "전문가", "서비스 제공", "프로젝트", "견적", "인력", "외주", "교육", "자문"],
+    strengths: ["초기 개발비 없이 전문성만으로 매출 검증이 가능함", "고객 문제를 깊게 이해하기 좋고 이후 제품화로 확장 가능"],
+    risks: ["대표자 또는 특정 인력 의존도가 높고 확장성이 제한될 수 있음", "품질 표준화와 납기 관리가 중요함"],
+    revenueHints: ["프로젝트 단가", "시간당/건당 과금", "월 자문료", "성과 보수", "패키지 용역"],
+    trend: "기업의 비핵심 업무 외주화, 소규모 전문 대행, 프랙셔널 전문가 수요와 맞물릴 수 있음",
+    fitBoost: 0.6,
+  },
+  {
+    id: "managed-service",
+    name: "운영 대행/관리 서비스",
+    keywords: ["운영", "관리", "대행", "정기 관리", "유지보수", "위탁", "SLA", "모니터링", "CS", "백오피스"],
+    strengths: ["반복 계약과 월 과금 구조를 만들기 좋음", "고객이 직접 하기 번거로운 일을 대신하면 전환 명분이 명확함"],
+    risks: ["서비스 품질, 인력 배치, 고객 대응 기준이 없으면 운영 리스크가 커짐", "고객 수가 늘수록 프로세스 표준화가 필요함"],
+    revenueHints: ["월 관리비", "계정/지점당 과금", "업무량 기반 과금", "기본료 + 추가 작업비"],
+    trend: "소상공인/중소기업의 운영 효율화와 반복 업무 아웃소싱 수요에 부합",
+    fitBoost: 0.7,
+  },
+  {
+    id: "local-offline-service",
+    name: "로컬/오프라인 서비스",
+    keywords: ["로컬", "매장", "방문", "예약", "현장", "지역", "오프라인", "프랜차이즈", "점포", "공간"],
+    strengths: ["지역 고객의 반복 수요를 잡으면 안정적 현금흐름이 가능함", "온라인 광고보다 입지와 후기, 소개가 강하게 작동할 수 있음"],
+    risks: ["입지, 인건비, 운영시간, 서비스 품질 편차가 수익성을 좌우함", "확장 전 표준 운영 매뉴얼이 필요함"],
+    revenueHints: ["회당 이용료", "정기권", "멤버십", "예약 수수료", "지점 운영 수익"],
+    trend: "지역 기반 생활 편의, 시니어/반려/육아/건강 관련 오프라인 서비스 수요와 연결 가능",
+    fitBoost: 0.4,
+  },
 ];
 
 let items = loadItems();
@@ -115,6 +155,23 @@ function createItem() {
 
 function currentItem() {
   return items.find((item) => item.id === activeId) || items[0];
+}
+
+function deleteCurrentItem() {
+  const item = currentItem();
+  if (!item) return;
+  const name = item.name || "새 사업아이템";
+  const ok = confirm(`"${name}" 아이템을 삭제할까요?\n삭제 후에는 내보내기 파일이 없으면 복구할 수 없습니다.`);
+  if (!ok) return;
+  items = items.filter((entry) => entry.id !== item.id);
+  if (!items.length) {
+    const next = createItem();
+    activeId = next.id;
+  } else {
+    activeId = items[0].id;
+    persist();
+  }
+  render();
 }
 
 function collectForm() {
@@ -192,6 +249,10 @@ function createRefinement(item) {
     },
   ];
 
+  typeSpecificQuestions(item).forEach((question) => {
+    if (!questions.some((itemQuestion) => itemQuestion.id === question.id)) questions.push(question);
+  });
+
   fixedQuestions.forEach((question) => {
     if (!questions.some((itemQuestion) => itemQuestion.id === question.id)) questions.push(question);
   });
@@ -202,6 +263,35 @@ function createRefinement(item) {
   item.analysis = null;
   item.updatedAt = new Date().toISOString();
   persist();
+}
+
+function typeSpecificQuestions(item) {
+  const text = allText(item);
+  if (contains(item.category + text, ["유통", "도매", "소매", "납품", "재고", "물류", "총판"])) {
+    return [
+      { id: "distribution-margin", text: "예상 매입가, 판매가, 마진율, 재고 회전 주기는 어떻게 되나요?", reason: "유통형 사업은 매출보다 마진과 재고 회전이 핵심입니다." },
+      { id: "supplier-risk", text: "핵심 공급처와 대체 공급처는 확보 가능한가요?", reason: "공급 안정성과 가격 협상력을 판단합니다." },
+    ];
+  }
+  if (contains(item.category + text, ["용역", "컨설팅", "대행", "자문", "외주", "프로젝트", "전문가"])) {
+    return [
+      { id: "service-capacity", text: "월 처리 가능한 고객 수나 프로젝트 수, 필요한 인력은 어느 정도인가요?", reason: "용역형 사업은 인력 투입과 처리 용량이 수익성을 좌우합니다." },
+      { id: "service-quality", text: "서비스 품질을 일정하게 유지하기 위한 표준 절차나 산출물은 무엇인가요?", reason: "품질 표준화와 재구매 가능성을 판단합니다." },
+    ];
+  }
+  if (contains(item.category + text, ["운영", "관리", "위탁", "유지보수", "정기 관리", "CS"])) {
+    return [
+      { id: "service-level", text: "고객에게 약속할 서비스 범위, 응답 시간, 제외 업무는 무엇인가요?", reason: "운영 대행은 서비스 범위가 흐리면 리스크가 커집니다." },
+      { id: "retainer", text: "월 고정 관리비와 추가 작업비를 어떻게 나눌 예정인가요?", reason: "반복 매출 구조와 업무량 리스크를 판단합니다." },
+    ];
+  }
+  if (contains(item.category + text, ["로컬", "매장", "방문", "예약", "현장", "오프라인", "프랜차이즈", "점포"])) {
+    return [
+      { id: "offline-operations", text: "입지, 운영시간, 인력, 회전율 중 수익에 가장 큰 영향을 주는 요소는 무엇인가요?", reason: "오프라인 서비스는 운영 조건이 손익을 크게 좌우합니다." },
+      { id: "repeat-visit", text: "고객이 반복 방문하거나 정기 이용할 이유는 무엇인가요?", reason: "로컬 서비스의 안정 매출 가능성을 판단합니다." },
+    ];
+  }
+  return [];
 }
 
 function detectGaps(item) {
@@ -325,7 +415,7 @@ function analyze(item) {
     canvas: buildCanvas(item),
     fitMatrix: buildFitMatrix(item, scores, contexts),
     swot: buildSwot(item, contexts),
-    roadmap: buildRoadmap(item),
+    roadmap: buildRoadmap(item, contexts),
     recommendations: buildRecommendations(contexts),
   };
 }
@@ -333,9 +423,9 @@ function analyze(item) {
 function revenueMaturity(item) {
   const text = `${item.revenue || ""} ${item.cost || ""} ${Object.values(item.answers || {}).join(" ")}`;
   const hasPrice = /\d/.test(text) || contains(text, ["원", "만원", "달러", "%", "퍼센트"]);
-  const hasUnit = contains(text, ["월", "년", "건당", "사용량", "좌석", "업체", "고객", "구독", "수수료", "판매", "회당"]);
-  const hasCost = wordCount(item.cost) >= 6 || contains(text, ["비용", "원가", "서버", "인건비", "광고비", "운영비", "마진"]);
-  const hasRevenue = wordCount(item.revenue) >= 6 || contains(text, ["구독", "수수료", "판매", "광고", "유지보수", "구축비"]);
+  const hasUnit = contains(text, ["월", "년", "건당", "사용량", "좌석", "업체", "고객", "구독", "수수료", "판매", "회당", "납품", "프로젝트", "시간당", "지점", "계약"]);
+  const hasCost = wordCount(item.cost) >= 6 || contains(text, ["비용", "원가", "서버", "인건비", "광고비", "운영비", "마진", "재고", "물류비", "외주비", "임대료", "반품"]);
+  const hasRevenue = wordCount(item.revenue) >= 6 || contains(text, ["구독", "수수료", "판매", "광고", "유지보수", "구축비", "마진", "납품", "용역", "자문료", "관리비", "정기권"]);
   return avg([bool(hasPrice), bool(hasUnit), bool(hasCost), bool(hasRevenue), normalizedLength(text, 180)]);
 }
 
@@ -401,11 +491,14 @@ function getSignals(item, text) {
   return {
     hasB2B: contains(text, ["기업", "소상공인", "사업자", "B2B", "업체", "팀", "기관"]),
     hasRecurring: contains(text, ["구독", "월", "정기", "반복", "유지보수", "멤버십"]),
-    hasHighRisk: contains(text, ["의료", "금융", "투자", "보험", "개인정보", "규제", "허가", "재고", "배송"]),
+    hasHighRisk: contains(text, ["의료", "금융", "투자", "보험", "개인정보", "규제", "허가", "재고", "배송", "미수금", "안전", "현장"]),
     hasAiSoftware: contains(item.category + text, ["AI", "소프트웨어", "앱", "대시보드", "자동화", "SaaS"]),
-    hasChannel: contains(text, ["검색", "광고", "소개", "영업", "커뮤니티", "SNS", "파트너", "콘텐츠", "채널"]),
-    hasMvp: contains(text, ["MVP", "파일럿", "프로토타입", "30일", "테스트", "검증", "첫 버전"]),
+    hasChannel: contains(text, ["검색", "광고", "소개", "영업", "커뮤니티", "SNS", "파트너", "콘텐츠", "채널", "입점", "납품처", "대리점", "오프라인", "지역"]),
+    hasMvp: contains(text, ["MVP", "파일럿", "프로토타입", "30일", "테스트", "검증", "첫 버전", "시범", "파일럿 고객", "샘플", "체험"]),
     hasCompetition: contains(text, ["경쟁", "대안", "차별", "기존", "전환"]),
+    hasDistribution: contains(item.category + text, ["유통", "도매", "소매", "납품", "물류", "재고", "마진", "공급"]),
+    hasService: contains(item.category + text, ["용역", "컨설팅", "대행", "자문", "프로젝트", "전문가", "외주"]),
+    hasOffline: contains(item.category + text, ["로컬", "매장", "방문", "예약", "현장", "오프라인", "점포", "프랜차이즈"]),
   };
 }
 
@@ -462,6 +555,15 @@ function buildExternalValidation(item, contexts) {
     `${benchmarkName} 실패 사례 리스크`,
     `${revenue} 가격 과금 방식 벤치마크`,
   ];
+  if (contexts.signals.hasDistribution) {
+    queries.push(`${coreName} 유통 마진율 재고 회전율`, `${coreName} 납품 도매 공급처 반품 조건`);
+  }
+  if (contexts.signals.hasService) {
+    queries.push(`${coreName} 용역 단가 견적 사례`, `${coreName} 대행 서비스 품질관리 계약서`);
+  }
+  if (contexts.signals.hasOffline) {
+    queries.push(`${coreName} 로컬 서비스 객단가 재방문율`, `${coreName} 오프라인 매장 손익분기 방문 수`);
+  }
 
   const checks = [
     {
@@ -489,6 +591,22 @@ function buildExternalValidation(item, contexts) {
       needed: ["최근 유사 사례", "성장 중인 세부 카테고리", "실패 사례"],
     },
   ];
+  if (contexts.signals.hasDistribution) {
+    checks.push({
+      name: "유통 수익성",
+      status: item.cost ? "가설 있음" : "보완 필요",
+      evidence: "유통형은 매출보다 마진율, 회전율, 반품률, 현금 회수 기간이 핵심입니다.",
+      needed: ["매입가", "판매가", "마진율", "재고 회전일", "반품 조건"],
+    });
+  }
+  if (contexts.signals.hasService) {
+    checks.push({
+      name: "용역 운영성",
+      status: item.revenue ? "가설 있음" : "보완 필요",
+      evidence: "용역형은 단가보다 투입 시간, 품질 표준화, 월 처리 가능 건수가 수익성을 좌우합니다.",
+      needed: ["서비스 범위", "산출물", "시간당 원가", "월 처리 가능 건수"],
+    });
+  }
 
   const assumptions = [
     `${target}이 ${problem}을 충분히 절실하게 느낀다.`,
@@ -554,7 +672,7 @@ async function enrichWithAiValidation(item, analysis) {
 
 function buildMetricAnalyses(item, scores, contexts) {
   const { revenueScore, signals, benchmarks } = contexts;
-  return [
+  const analyses = [
     {
       name: "수익성",
       score: scores["수익성"],
@@ -612,6 +730,37 @@ function buildMetricAnalyses(item, scores, contexts) {
       action: "완성형 제품보다 수작업 운영을 섞은 테스트 버전으로 구현 범위를 줄이세요.",
     },
   ];
+  if (signals.hasDistribution) {
+    analyses.splice(2, 0, {
+      name: "유통 운영성",
+      score: Math.max(1, Math.min(10, Math.round((revenueScore * 5) + (signals.hasChannel ? 2 : 0) + 2))),
+      diagnosis: "유통형 사업은 상품 매력보다 매입가, 판매가, 회전율, 반품/재고 리스크가 수익성을 좌우합니다.",
+      evidence: [item.cost ? "비용/원가 입력 있음" : "매입가/물류비 부족", signals.hasChannel ? "판매처 또는 채널 단서 있음" : "판매처 단서 부족"],
+      needs: ["매입가", "판매가", "마진율", "재고 회전 주기", "반품 조건", "대체 공급처"],
+      action: "상품 1~3개만 골라 소량 테스트 판매를 하고, 매출보다 실제 마진과 재고 회전일을 먼저 확인하세요.",
+    });
+  }
+  if (signals.hasService) {
+    analyses.splice(2, 0, {
+      name: "용역 제공성",
+      score: Math.max(1, Math.min(10, Math.round((revenueScore * 4) + (signals.hasRecurring ? 2 : 0) + 3))),
+      diagnosis: "용역형 사업은 고객 수보다 단가, 투입 시간, 품질 표준화, 재구매 가능성이 핵심입니다.",
+      evidence: [signals.hasRecurring ? "반복 계약 단서 있음" : "일회성 프로젝트 가능성", item.differentiation ? "전문성/차별화 입력 있음" : "전문성 근거 부족"],
+      needs: ["표준 서비스 범위", "시간당 원가", "프로젝트 단가", "월 처리 가능 건수", "품질 체크리스트"],
+      action: "서비스를 3단계 패키지로 나누고, 각 패키지의 산출물과 제외 범위를 명확히 정의하세요.",
+    });
+  }
+  if (signals.hasOffline) {
+    analyses.splice(2, 0, {
+      name: "오프라인 운영성",
+      score: Math.max(1, Math.min(10, Math.round((revenueScore * 4) + (signals.hasChannel ? 2 : 0) + 2))),
+      diagnosis: "오프라인/로컬 서비스는 수요보다 입지, 운영시간, 인력, 회전율이 손익을 크게 좌우합니다.",
+      evidence: [signals.hasChannel ? "지역/방문 채널 단서 있음" : "지역 유입 경로 부족", item.cost ? "운영비 입력 있음" : "임대료/인건비 부족"],
+      needs: ["입지 조건", "운영시간", "객단가", "회전율", "인력 계획", "재방문 이유"],
+      action: "정식 오픈 전에 예약제 파일럿이나 팝업 형태로 시간대별 수요와 재방문 의향을 확인하세요.",
+    });
+  }
+  return analyses;
 }
 
 function buildCanvas(item) {
@@ -658,7 +807,31 @@ function buildSwot(item, contexts) {
   };
 }
 
-function buildRoadmap(item) {
+function buildRoadmap(item, contexts) {
+  if (contexts.signals.hasDistribution) {
+    return [
+      { stage: "1주차", goal: "상품/공급 검증", task: "대표 상품 1~3개의 매입가, 판매가, 공급 안정성, 반품 조건을 확인", metric: "예상 마진율, 공급 리드타임" },
+      { stage: "2주차", goal: "판매처 검증", task: "잠재 납품처나 판매 채널 10곳에 제안하고 실제 관심도를 확인", metric: "견적 요청 수, 샘플 요청 수" },
+      { stage: "3주차", goal: "소량 판매 검증", task: "소량 재고 또는 샘플로 테스트 판매를 진행", metric: "실제 마진, 재고 회전일, 반품률" },
+      { stage: "4주차", goal: "운영 리스크 점검", task: "물류비, 미수금, 재고 부담을 반영해 손익분기 판매량을 계산", metric: "손익분기 수량, 현금 회수 기간" },
+    ];
+  }
+  if (contexts.signals.hasService) {
+    return [
+      { stage: "1주차", goal: "서비스 패키지화", task: "제공 범위, 산출물, 제외 업무, 단가를 3단계 패키지로 정리", metric: "패키지별 예상 투입 시간" },
+      { stage: "2주차", goal: "고객 문제 검증", task: "잠재 고객 5명에게 현재 외주/용역 이용 방식과 예산을 확인", metric: "유료 의향, 예상 단가" },
+      { stage: "3주차", goal: "파일럿 제공", task: "소규모 유료 또는 저가 파일럿으로 납기와 품질 관리 가능성을 확인", metric: "투입 시간, 고객 만족도, 재구매 의향" },
+      { stage: "4주차", goal: "운영 표준화", task: "반복 작업을 체크리스트와 템플릿으로 정리하고 월 처리 가능 건수를 계산", metric: "월 처리 가능 건수, 시간당 이익" },
+    ];
+  }
+  if (contexts.signals.hasOffline) {
+    return [
+      { stage: "1주차", goal: "지역 수요 검증", task: "목표 지역 고객 10명에게 이용 빈도, 객단가, 방문 가능 시간을 확인", metric: "방문 의향, 예상 객단가" },
+      { stage: "2주차", goal: "운영 조건 검증", task: "입지, 운영시간, 인력, 회전율, 고정비를 가정해 손익을 계산", metric: "손익분기 방문 수" },
+      { stage: "3주차", goal: "예약제 파일럿", task: "정식 오픈 전 예약제/팝업 형태로 실제 이용 흐름을 테스트", metric: "예약률, 노쇼율, 재방문 의향" },
+      { stage: "4주차", goal: "반복 이용 구조", task: "정기권, 멤버십, 패키지 등 반복 구매 구조를 테스트", metric: "재구매율, 정기권 전환율" },
+    ];
+  }
   const metric = item.answers?.metric || "인터뷰 5건, 사전 신청 10건, 유료 의향 3건";
   return [
     { stage: "1주차", goal: "수익모델 가설", task: "가격표, 과금 단위, 월 고정비, 손익분기 고객 수를 임시 계산", metric: "고객당 예상 매출, 손익분기 고객 수" },
@@ -1012,6 +1185,8 @@ $("#newItemButton").addEventListener("click", () => {
   render();
   setTab("input");
 });
+
+$("#deleteItemButton").addEventListener("click", deleteCurrentItem);
 
 $("#saveButton").addEventListener("click", () => {
   collectForm();

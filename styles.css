@@ -140,6 +140,25 @@ h3 {
   padding: 0 9px;
 }
 
+.sidebar-actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.tiny-button {
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  min-height: 28px;
+  padding: 0 10px;
+}
+
+.danger-button {
+  background: #fff1f1;
+  color: var(--danger);
+}
+
 .item-list {
   display: grid;
   gap: 8px;

@@ -20,7 +20,10 @@
         <aside class="sidebar" aria-label="사업아이템 목록">
           <div class="sidebar-head">
             <h2>아이템</h2>
-            <span id="itemCount">0</span>
+            <div class="sidebar-actions">
+              <span id="itemCount">0</span>
+              <button id="deleteItemButton" class="tiny-button danger-button" type="button" title="선택 아이템 삭제">삭제</button>
+            </div>
           </div>
           <div id="itemList" class="item-list"></div>
         </aside>
@@ -52,7 +55,11 @@
                   <option>헬스케어</option>
                   <option>콘텐츠</option>
                   <option>제조/유통</option>
+                  <option>유통/도소매</option>
+                  <option>전문 용역</option>
+                  <option>운영 대행</option>
                   <option>로컬 서비스</option>
+                  <option>프랜차이즈/오프라인</option>
                   <option>기타</option>
                 </select>
               </label>
