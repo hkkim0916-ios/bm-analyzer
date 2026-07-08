@@ -109,6 +109,11 @@ h3 {
   justify-content: space-between;
 }
 
+.button-row {
+  display: flex;
+  gap: 8px;
+}
+
 .section-head {
   border-bottom: 1px solid var(--line);
   margin: -22px -22px 18px;

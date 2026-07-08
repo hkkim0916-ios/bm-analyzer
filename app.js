@@ -879,6 +879,42 @@ function exportJson() {
   URL.revokeObjectURL(url);
 }
 
+function importJsonFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    try {
+      const imported = JSON.parse(String(reader.result || "[]"));
+      if (!Array.isArray(imported)) throw new Error("JSON 배열 형식이 아닙니다.");
+      const normalized = imported
+        .filter((item) => item && typeof item === "object")
+        .map((item) => ({
+          ...item,
+          id: item.id || crypto.randomUUID(),
+          createdAt: item.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          answers: item.answers || {},
+          questions: item.questions || [],
+          gaps: item.gaps || [],
+        }));
+      const existingIds = new Set(items.map((item) => item.id));
+      const merged = [
+        ...normalized.filter((item) => !existingIds.has(item.id)),
+        ...items,
+      ];
+      items = merged;
+      activeId = items[0]?.id || createItem().id;
+      persist();
+      render();
+      setTab("compare");
+      alert(`${normalized.length}개 아이템을 가져왔습니다.`);
+    } catch (error) {
+      alert(`가져오기에 실패했습니다: ${error.message}`);
+    }
+  });
+  reader.readAsText(file);
+}
+
 function render() {
   renderItems();
   fillForm();
@@ -1039,5 +1075,10 @@ $("#copyReportButton").addEventListener("click", async () => {
 });
 
 $("#exportButton").addEventListener("click", exportJson);
+$("#importButton").addEventListener("click", () => $("#importFile").click());
+$("#importFile").addEventListener("change", (event) => {
+  importJsonFile(event.target.files?.[0]);
+  event.target.value = "";
+});
 
 render();
